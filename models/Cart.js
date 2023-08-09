@@ -13,7 +13,7 @@ const CartSchema = new Schema(
                 type: Number,
                 default: 1,
             },
-           
+            size: String
             
         },
         
