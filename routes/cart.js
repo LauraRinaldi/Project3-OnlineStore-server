@@ -19,8 +19,8 @@ router.post("/", verifyToken, async (req, res) => {
 
   try {
     const savedCart = await newCart.save();
-    savedCart.products.push(req.body)
-    savedCart.subtotal += thisProduct.price
+    savedCart.products.push({productId: req.body.productId, size: req.body.size, quantity: req.body.quantity})
+    savedCart.subtotal += thisProduct.price * req.body.quantity
     savedCart.total = savedCart.subtotal * savedCart.tax
     const returnedCart = await savedCart.save()
     res.status(200).json(returnedCart);
@@ -32,22 +32,34 @@ router.post("/", verifyToken, async (req, res) => {
 
 
 //Update
-router.put("/:id/:cartId", verifyTokenAndAuthorization, async (req, res) => {
+router.post("/:id/:cartId", verifyTokenAndAuthorization, async (req, res) => {
+  console.log("Update information ++++++", req.body)
   try {
+    const thisProduct = await Product.findById(req.body.productId)
     console.log("bODY ====>", req.body)
-    const newProduct = {productId: req.body.productId, quantity: 1}
-    console.log("New Product", newProduct)
-    const cartToUpdate = await Cart.findById(req.params.cartId)
-    
-    cartToUpdate.products.push(newProduct)
 
-    const cart = await cartToUpdate.save()
+    console.log("THIS product ?????????", thisProduct)
+    
+    // const newProduct = {productId: req.body.productId, quantity: 1}
+    // console.log("New Product", newProduct)
+    const cartToUpdate = await Cart.findById(req.params.cartId)
+
+    
+    cartToUpdate.products.push({productId: req.body.productId, size: req.body.size, quantity: req.body.quantity})
+
+    cartToUpdate.subtotal += thisProduct.price * req.body.quantity
+    cartToUpdate.total = cartToUpdate.subtotal * cartToUpdate.tax
 
     console.log("cart to update", cartToUpdate)
 
+    const cart = await cartToUpdate.save()
+
+
     res.status(200).json(cart);
   } catch (err) {
-    res.status(500).json(err);
+    console.log("Updated Error", err)
+    res.redirect(307, '/cart')
+    // res.status(500).json(err);
   }
 });
 
@@ -73,7 +85,7 @@ router.get("/find/:id", verifyTokenAndAuthorization, async (req, res) => {
       console.log("Products ===>", finishedProducts)
       let newProducts = []
       finishedProducts.forEach((product, i) => {
-        let newProduct = {product, quantity: thisCart.products[i].quantity}
+        let newProduct = {product, quantity: thisCart.products[i].quantity, size: thisCart.products[i].size}
         newProducts.push(newProduct)
       })
       const cart = {...thisCart._doc}
